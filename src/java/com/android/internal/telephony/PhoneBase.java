@@ -1,4 +1,8 @@
 /*
+ * Copyright (c) 2012-13, The Linux Foundation. All rights reserved.
+ * Not a Contribution, Apache license notifications and license are retained
+ * for attribution purposes only.
+ *
  * Copyright (C) 2007 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -208,6 +212,9 @@ public abstract class PhoneBase extends Handler implements Phone {
             = new RegistrantList();
 
     protected final RegistrantList mSuppServiceFailedRegistrants
+            = new RegistrantList();
+
+    protected final RegistrantList mCallModifyRegistrants
             = new RegistrantList();
 
     protected Looper mLooper; /* to insure registrants are in correct thread*/
@@ -1462,4 +1469,23 @@ public abstract class PhoneBase extends Handler implements Phone {
     public boolean isRadioOn() {
         return mCi.getRadioState().isOn();
     }
+    // IMS APIs - Implemented only in ImsPhone
+    public void acceptCall(int callType) throws CallStateException {
+        throw new CallStateException("Accept with CallType is not supported in this phone " + this);
+    }
+
+    public int getCallType(Call call) throws CallStateException {
+        throw new CallStateException("getCallType is not supported in this phone " + this);
+    }
+
+    public int getCallDomain(Call call) throws CallStateException {
+        throw new CallStateException("getCallDomain is not supported in this phone " + this);
+    }
+
+    public Connection dial(String dialString, int CallType, String[] extras)
+            throws CallStateException {
+        throw new CallStateException("Dial with CallDetails is not supported in this phone "
+                + this);
+    }
+
 }
