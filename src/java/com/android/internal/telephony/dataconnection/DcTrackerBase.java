@@ -77,7 +77,7 @@ import java.util.PriorityQueue;
  */
 public abstract class DcTrackerBase extends Handler {
     protected static final boolean DBG = true;
-    protected static final boolean VDBG = false; // STOPSHIP if true
+    protected static final boolean VDBG = true; // STOPSHIP if true
     protected static final boolean VDBG_STALL = true; // STOPSHIP if true
     protected static final boolean RADIO_TESTS = false;
 
@@ -1861,7 +1861,7 @@ public abstract class DcTrackerBase extends Handler {
         pw.println(" mActiveApn=" + mActiveApn);
         ArrayList<ApnSetting> apnSettings = mAllApnSettings;
         if (apnSettings != null) {
-            pw.println(" mAllApnSettings size=" + apnSettings.size());
+            w.println(" mAllApnSettings size=" + apnSettings.size());
             for (int i=0; i < apnSettings.size(); i++) {
                 pw.printf(" mAllApnSettings[%d]: %s\n", i, apnSettings.get(i));
             }
