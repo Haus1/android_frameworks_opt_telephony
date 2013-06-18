@@ -136,7 +136,10 @@ public class CDMAPhone extends PhoneBase {
 
     Registrant mPostDialHandler;
 
-    public static String PROPERTY_CDMA_HOME_OPERATOR_NUMERIC = "ro.cdma.home.operator.numeric";
+    public static final String PROPERTY_CDMA_HOME_OPERATOR_NUMERIC =
+            "ro.cdma.home.operator.numeric";
+    public static final String PROPERTY_CDMA_HOME_OPERATOR_ALPHA =
+            "ro.cdma.home.operator.alpha";
 
     // Constructors
     public CDMAPhone(Context context, CommandsInterface ci, PhoneNotifier notifier) {
@@ -196,7 +199,7 @@ public class CDMAPhone extends PhoneBase {
                 TelephonyProperties.PROPERTY_OTASP_NUM_SCHEMA,"");
 
         // Sets operator properties by retrieving from build-time system property
-        String operatorAlpha = SystemProperties.get("ro.cdma.home.operator.alpha");
+        String operatorAlpha = SystemProperties.get(PROPERTY_CDMA_HOME_OPERATOR_ALPHA);
         String operatorNumeric = SystemProperties.get(PROPERTY_CDMA_HOME_OPERATOR_NUMERIC);
         log("init: operatorAlpha='" + operatorAlpha
                 + "' operatorNumeric='" + operatorNumeric + "'");
