@@ -18,6 +18,7 @@ package com.android.internal.telephony;
 
 
 import android.content.Context;
+import android.os.Message;
 import android.os.RegistrantList;
 import android.os.Registrant;
 import android.os.Handler;
@@ -704,6 +705,9 @@ public abstract class BaseCommands implements CommandsInterface {
                 mOffOrNotAvailRegistrants.notifyRegistrants();
             }
         }
+    }
+
+    public void sendSMSExpectMore (String smscPDU, String pdu, Message result) {
     }
 
     protected void onRadioAvailable() {

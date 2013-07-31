@@ -1,4 +1,4 @@
-/*
+*
  * Copyright (C) 2006 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -196,10 +196,10 @@ public final class GsmSMSDispatcher extends SMSDispatcher {
                 message, deliveryIntent != null, SmsHeader.toByteArray(smsHeader),
                 encoding, smsHeader.languageTable, smsHeader.languageShiftTable);
         if (pdu != null) {
-            HashMap map =  getSmsTrackerMap(destinationAddress, scAddress,
+            HashMap map =  SmsTrackerMapFactory(destinationAddress, scAddress,
                     message, pdu);
-            SmsTracker tracker = getSmsTracker(map, sentIntent,
-                    deliveryIntent, getFormat());
+            SmsTracker tracker = SmsTrackerFactory(map, sentIntent,
+                    deliveryIntent, getFormat(), !lastPart);
             sendRawPdu(tracker);
         } else {
             Rlog.e(TAG, "GsmSMSDispatcher.sendNewSubmitPdu(): getSubmitPdu() returned null");
@@ -251,8 +251,13 @@ public final class GsmSMSDispatcher extends SMSDispatcher {
                     pdu[1] = (byte) tracker.mMessageRef; // TP-MR
                 }
             }
-            mCi.sendSMS(IccUtils.bytesToHexString(smsc),
-                    IccUtils.bytesToHexString(pdu), reply);
+            if (tracker.mRetryCount == 0 && tracker.mExpectMore) {
+                mCi.sendSMSExpectMore(IccUtils.bytesToHexString(smsc),
+                        IccUtils.bytesToHexString(pdu), reply);
+            } else {
+                mCi.sendSMS(IccUtils.bytesToHexString(smsc),
+                        IccUtils.bytesToHexString(pdu), reply);
+            }
         } else {
             mCi.sendImsGsmSms(IccUtils.bytesToHexString(smsc),
                     IccUtils.bytesToHexString(pdu), tracker.mImsRetry,
