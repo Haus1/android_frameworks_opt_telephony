@@ -21,6 +21,7 @@ import android.content.Context;
 import android.os.Message;
 import android.os.RegistrantList;
 import android.os.Registrant;
+import android.os.Message;
 import android.os.Handler;
 import android.os.AsyncResult;
 import android.telephony.TelephonyManager;
@@ -659,6 +660,10 @@ public abstract class BaseCommands implements CommandsInterface {
      */
     @Override
     public void setCurrentPreferredNetworkType() {
+    }
+
+    @Override
+    public void getDataCallProfile(int appType, Message result) {
     }
 
     //***** Protected Methods
