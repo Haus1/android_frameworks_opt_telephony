@@ -1610,7 +1610,8 @@ public class CdmaServiceStateTracker extends ServiceStateTracker {
         // Note: it needs to be confirmed which CDMA network types
         // can support voice and data calls concurrently.
         // For the time-being, the return value will be false.
-        return false;
+        //return false;
+        return true;
     }
 
     public String getMdnNumber() {
