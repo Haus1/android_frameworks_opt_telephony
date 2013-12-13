@@ -217,7 +217,7 @@ public class RIL extends BaseCommands implements CommandsInterface {
     static final String RILJ_LOG_TAG = "RILJ";
     static final String LOG_TAG = RILJ_LOG_TAG;
     static final boolean RILJ_LOGD = true;
-    static final boolean RILJ_LOGV = false; // STOPSHIP if true
+    static final boolean RILJ_LOGV = true; // STOPSHIP if true
     protected boolean samsungDriverCall = false;
 
     /**
@@ -3867,7 +3867,9 @@ public class RIL extends BaseCommands implements CommandsInterface {
             case RIL_REQUEST_SET_INITIAL_ATTACH_APN: return "RIL_REQUEST_SET_INITIAL_ATTACH_APN";
             case RIL_REQUEST_IMS_REGISTRATION_STATE: return "RIL_REQUEST_IMS_REGISTRATION_STATE";
             case RIL_REQUEST_IMS_SEND_SMS: return "RIL_REQUEST_IMS_SEND_SMS";
-            default: return "<unknown request>";
+            default:
+                Rlog.e(RILJ_LOG_TAG, "Received Unknown RIL Request " + String.valueOf(request));
+                return "<unknown request>";
         }
     }
 
@@ -3919,7 +3921,9 @@ public class RIL extends BaseCommands implements CommandsInterface {
             case RIL_UNSOL_CELL_INFO_LIST: return "UNSOL_CELL_INFO_LIST";
             case RIL_UNSOL_RESPONSE_IMS_NETWORK_STATE_CHANGED:
                 return "UNSOL_RESPONSE_IMS_NETWORK_STATE_CHANGED";
-            default: return "<unknown response>";
+            default:
+                Rlog.e(RILJ_LOG_TAG, "Received Unknown UNSOL Response " + String.valueOf(request));
+                return "<unknown response>";
         }
     }
 
