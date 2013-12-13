@@ -30,7 +30,7 @@ import android.os.Message;
  * AsyncChannel to a DataConnection
  */
 public class DcAsyncChannel extends AsyncChannel {
-    private static final boolean DBG = false;
+    private static final boolean DBG = true;
     private String mLogTag;
 
     private DataConnection mDc;

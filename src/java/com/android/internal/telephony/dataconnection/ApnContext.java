@@ -39,7 +39,7 @@ public class ApnContext {
 
     public final String LOG_TAG;
 
-    protected static final boolean DBG = false;
+    protected static final boolean DBG = true;
 
     private final Context mContext;
 
