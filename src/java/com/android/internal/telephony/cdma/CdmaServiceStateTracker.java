@@ -707,17 +707,21 @@ public class CdmaServiceStateTracker extends ServiceStateTracker {
                 String opNames[] = (String[])ar.result;
     
                 if (opNames != null && opNames.length >= 3) {
-                    // If the NUMERIC field isn't valid use PROPERTY_CDMA_HOME_OPERATOR_NUMERIC
-                    if ((opNames[2] == null) || (opNames[2].length() < 5)
-                            || ("00000".equals(opNames[2]))) {
-                        opNames[2] = SystemProperties.get(
-                                CDMAPhone.PROPERTY_CDMA_HOME_OPERATOR_NUMERIC, "00000");
+                    // Use value defined in the build properties if MCC is invalid
+                    // Possibly fall back on GSM?
+                    String strNumericProp = String.valueOf(SystemProperties.get(CDMAPhone.PROPERTY_CDMA_HOME_OPERATOR_NUMERIC));
+                    if (!strNumericProp.isEmpty()
+                            && ((opNames[2] == null) || (opNames[2].length() < 5) || opNames[2].substring(4,opNames[2].length()).equals("00") )) {
+                        opNames[2] = strNumericProp;
                         if (DBG) {
-                            log("RIL_REQUEST_OPERATOR.response[2], the numeric, " +
-                                    " is bad. Using SystemProperties '" +
+                            log("Using SystemProperties for operator Numeric '" +
                                             CDMAPhone.PROPERTY_CDMA_HOME_OPERATOR_NUMERIC +
                                     "'= " + opNames[2]);
                         }
+                    }
+                    if (opNames[2].isEmpty()) {
+                        log("RIL_REQUEST_OPERATOR.responce[2] and ro.cdma.home.operator.numeric are both invalid!");
+                        opNames[2] = "00000";
                     }
 
                     if (!mIsSubscriptionFromRuim) {
@@ -732,10 +736,8 @@ public class CdmaServiceStateTracker extends ServiceStateTracker {
                 }
                 break;
 
-            
             default:
-    
-                
+
                 loge("handlePollStateResultMessage: RIL response handle in wrong phone!"
                         + " Expected CDMA RIL request and get GSM RIL request.");
                 break;
