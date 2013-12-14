@@ -709,23 +709,17 @@ public class CdmaServiceStateTracker extends ServiceStateTracker {
                 String opNames[] = (String[])ar.result;
     
                 if (opNames != null && opNames.length >= 3) {
-                    // Default to PROPERTY_CDMA_HOME_OPERATOR_NUMERIC if it's set
-                    // Possibly fall back on GSM?
-                    String strPropCdmaNumeric = String.valueOf(SystemProperties.get(CDMAPhone.PROPERTY_CDMA_HOME_OPERATOR_NUMERIC, ""));
-                    if (!strPropCdmaNumeric.isEmpty()
-                            || (opNames[2] == null)
-                            || (opNames[2].length() < 5)
+                    // If the NUMERIC field isn't valid use PROPERTY_CDMA_HOME_OPERATOR_NUMERIC
+                    if ((opNames[2] == null) || (opNames[2].length() < 5)
                             || ("00000".equals(opNames[2]))) {
-                        opNames[2] = strPropCdmaNumeric;
+                        opNames[2] = SystemProperties.get(
+                                CDMAPhone.PROPERTY_CDMA_HOME_OPERATOR_NUMERIC, "00000");
                         if (DBG) {
-                            log("Using SystemProperties for operator Numeric '" +
+                            log("RIL_REQUEST_OPERATOR.response[2], the numeric, " +
+                                    " is bad. Using SystemProperties '" +
                                             CDMAPhone.PROPERTY_CDMA_HOME_OPERATOR_NUMERIC +
                                     "'= " + opNames[2]);
                         }
-                    }
-                    if (opNames[2].isEmpty()) {
-                        log("RIL_REQUEST_OPERATOR.responce[2] and ro.cdma.home.operator.numeric are both invalid!");
-                        opNames[2] = "00000";
                     }
 
                     if (!mIsSubscriptionFromRuim) {
