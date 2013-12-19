@@ -124,7 +124,6 @@ public class PhoneFactory {
                 } catch (Exception e) {
                     // Try using the default RIL
                     Rlog.e(LOG_TAG, "Invalid RIL Class " + sRILClassname, e);
-                    Log.e(LOG_TAG, "Invalid RIL Class " + sRILClassname + "! Using default RIL");
                     sRILClassname = "RIL";
                 }
                 try {
