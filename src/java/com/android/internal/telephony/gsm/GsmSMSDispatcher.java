@@ -196,7 +196,7 @@ public final class GsmSMSDispatcher extends SMSDispatcher {
                 message, deliveryIntent != null, SmsHeader.toByteArray(smsHeader),
                 encoding, smsHeader.languageTable, smsHeader.languageShiftTable);
         if (pdu != null) {
-            HashMap map =  SmsTrackerMapFactory(destinationAddress, scAddress,
+            HashMap map =  getSmsTrackerMap(destinationAddress, scAddress,
                     message, pdu);
             SmsTracker tracker = SmsTrackerFactory(map, sentIntent,
                     deliveryIntent, getFormat(), !lastPart);

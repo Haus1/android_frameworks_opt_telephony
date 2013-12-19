@@ -1310,7 +1310,7 @@ public final class DcTracker extends DcTrackerBase {
      */
     private boolean isHigherPriorityApnContextActive(ApnContext apnContext) {
         for (ApnContext otherContext : mPrioritySortedApnContexts) {
-            if (apnContext.getApnType().equalsIgnoreCase(otherContext.getApnType())) return false;
+            if (apnContext.getDataProfileType().equalsIgnoreCase(otherContext.getDataProfileType())) return false;
             if (otherContext.isEnabled() && otherContext.getState() != DctConstants.State.FAILED) {
                 return true;
             }
@@ -1966,7 +1966,7 @@ public final class DcTracker extends DcTrackerBase {
 
         // If APN is still enabled, try to bring it back up automatically
         if (mAttached.get() && apnContext.isReady()
-                && retryAfterDisconnected(apnContext.getReason())) {
+                && retryAfterDisconnected(apnContext)) {
             if (apnContext.getReason().equals(Phone.REASON_NW_TYPE_CHANGED)) {
                 // Retry immediately if reason is nw_type_changed (like rat switch, for instance)
                 setupDataOnConnectableApns(Phone.REASON_NW_TYPE_CHANGED);
@@ -2156,23 +2156,6 @@ public final class DcTracker extends DcTrackerBase {
                 }
                 cursor.close();
             }
-        }
-
-        if (mAllApnSettings.isEmpty() && mPhone.getPhoneType() == PhoneConstants.PHONE_TYPE_CDMA) {
-            // Create dummy data profile.
-            if (DBG) log("createAllApnList: Creating dummy apn for cdma operator:" + operator);
-            String[] mDefaultApnTypes = {
-                    PhoneConstants.APN_TYPE_DEFAULT,
-                    PhoneConstants.APN_TYPE_MMS,
-                    PhoneConstants.APN_TYPE_SUPL,
-                    PhoneConstants.APN_TYPE_HIPRI,
-                    PhoneConstants.APN_TYPE_FOTA,
-                    PhoneConstants.APN_TYPE_IMS,
-                    PhoneConstants.APN_TYPE_CBS };
-            ApnSetting apn = new ApnSetting(apnTypeToId(PhoneConstants.APN_TYPE_DEFAULT), operator,
-                    null, null, null, null, null, null, null, null, null,
-                    RILConstants.SETUP_DATA_AUTH_PAP_CHAP, mDefaultApnTypes, "IP", "IP", true, 0);
-            mAllApnSettings.add(apn);
         }
 
         if (mAllDps.isEmpty()) {
