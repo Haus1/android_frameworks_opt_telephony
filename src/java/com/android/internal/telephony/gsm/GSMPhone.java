@@ -753,6 +753,11 @@ public class GSMPhone extends PhoneBase {
         }
     }
 
+//    @Override
+//    public Connection dial(String dialString, int callType, String[] extras) throws CallStateException {
+//        throw new CallStateException("dial(String dialString, int callType, String[] extras) is not supported in CDMA!");
+//    }
+
     @Override
     public boolean handlePinMmi(String dialString) {
         GsmMmiCode mmi = GsmMmiCode.newFromDialString(dialString, this, mUiccApplication.get());

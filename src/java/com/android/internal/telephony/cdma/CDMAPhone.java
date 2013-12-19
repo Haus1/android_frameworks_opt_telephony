@@ -382,6 +382,11 @@ public class CDMAPhone extends PhoneBase {
         throw new CallStateException("Sending UUS information NOT supported in CDMA!");
     }
 
+//    @Override
+//    public Connection dial(String dialString, int callType, String[] extras) throws CallStateException {
+//        throw new CallStateException("dial(String dialString, int callType, String[] extras) is not supported in CDMA!");
+//    }
+
     @Override
     public boolean
     getMessageWaitingIndicator() {
