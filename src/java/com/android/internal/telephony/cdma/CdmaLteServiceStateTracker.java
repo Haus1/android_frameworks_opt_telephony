@@ -526,7 +526,7 @@ public class CdmaLteServiceStateTracker extends CdmaServiceStateTracker {
     public boolean isConcurrentVoiceAndDataAllowed() {
         // Using the Conncurrent Service Supported flag for CdmaLte devices.
         //return mSS.getCssIndicator() == 1;
-        true
+        return true;
     }
 
     /**

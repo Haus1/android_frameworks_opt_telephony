@@ -1014,10 +1014,10 @@ public final class DcTracker extends DcTrackerBase {
         return false;
     }
 
-    private ApnSetting makeApnSetting(Cursor cursor) {
+    private DataProfile makeDataProfile(Cursor cursor) {
         String[] types = parseTypes(
                 cursor.getString(cursor.getColumnIndexOrThrow(Telephony.Carriers.TYPE)));
-        ApnSetting apn = new ApnSetting(
+        DataProfile apn = new DataProfile(
                 cursor.getInt(cursor.getColumnIndexOrThrow(Telephony.Carriers._ID)),
                 cursor.getString(cursor.getColumnIndexOrThrow(Telephony.Carriers.NUMERIC)),
                 cursor.getString(cursor.getColumnIndexOrThrow(Telephony.Carriers.NAME)),
@@ -1061,7 +1061,7 @@ public final class DcTracker extends DcTrackerBase {
                 if (mvnoType != null) {
                     if (mvnoType.equals(cursorMvnoType) &&
                             mvnoMatchData.equals(cursorMvnoMatchData)) {
-                        result.add(makeApnSetting(cursor));
+                        result.add(makeDataProfile(cursor));
                     }
                 } else {
                     // no mvno match yet
@@ -1070,11 +1070,11 @@ public final class DcTracker extends DcTrackerBase {
                         result.clear();
                         mvnoType = cursorMvnoType;
                         mvnoMatchData = cursorMvnoMatchData;
-                        result.add(makeApnSetting(cursor));
+                        result.add(makeDataProfile(cursor));
                     } else {
                         // add only non-mvno data
                         if (cursorMvnoType.equals("")) {
-                            result.add(makeApnSetting(cursor));
+                            result.add(makeDataProfile(cursor));
                         }
                     }
                 }
@@ -1139,7 +1139,7 @@ public final class DcTracker extends DcTrackerBase {
                     types = mDefaultApnTypes;
                     apnId = mDefaultApnId;
                 }
-                apnSetting = new ApnSetting(apnId, "", "", "", "", "", "", "", "", "",
+                apnSetting = new DataProfile(apnId, "", "", "", "", "", "", "", "", "",
                                             "", 0, types, "IP", "IP", true, 0);
                 if (DBG) log("setupData: CDMA detected and apnSetting == null, use stubbed CDMA APN setting= " + apnSetting);
             } else {
@@ -2189,9 +2189,7 @@ public final class DcTracker extends DcTrackerBase {
                     == UiccController.APP_FAM_3GPP2) {
                 addDummyDataProfiles(operator);
             }
-        }
 
-        if (mAllDps.isEmpty()) {
             if (DBG) log("createAllApnList: No APN found for carrier: " + operator);
             mPreferredDp = null;
             // TODO: What is the right behavior?
@@ -2221,12 +2219,12 @@ public final class DcTracker extends DcTrackerBase {
         String[] dunApnTypes = {
                 PhoneConstants.APN_TYPE_DUN};
 
-        ApnSetting apn = new ApnSetting(DctConstants.APN_DEFAULT_ID, operator, null, null,
+        DataProfile apn = new DataProfile(DctConstants.APN_DEFAULT_ID, operator, null, null,
                 null, null, null, null, null, null, null,
                 RILConstants.SETUP_DATA_AUTH_PAP_CHAP, defaultApnTypes,
                 PROPERTY_CDMA_IPPROTOCOL, PROPERTY_CDMA_ROAMING_IPPROTOCOL, true, 0);
         mAllDps.add(apn);
-        apn = new ApnSetting(DctConstants.APN_DUN_ID, operator, null, null,
+        apn = new DataProfile(DctConstants.APN_DUN_ID, operator, null, null,
                 null, null, null, null, null, null, null,
                 RILConstants.SETUP_DATA_AUTH_PAP_CHAP, dunApnTypes,
                 PROPERTY_CDMA_IPPROTOCOL, PROPERTY_CDMA_ROAMING_IPPROTOCOL, true, 0);
