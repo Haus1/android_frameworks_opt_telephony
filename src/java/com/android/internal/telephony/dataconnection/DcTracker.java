@@ -128,13 +128,13 @@ public final class DcTracker extends DcTrackerBase {
      * Property that can be used to set the IP version for CDMA
      */
     private static final String PROPERTY_CDMA_IPPROTOCOL = SystemProperties.get(
-            "persist.telephony.cdma.protocol", "IP");
+            "persist.telephony.cdma.protocol", "IPV4V6");
 
     /**
      * Property that can be used to set the IP version for CDMA when roaming
      */
     private static final String PROPERTY_CDMA_ROAMING_IPPROTOCOL = SystemProperties.get(
-            "persist.telephony.cdma.rproto", "IP");
+            "persist.telephony.cdma.rproto", "IPV4V6");
 
     private boolean mCanSetPreferApn = false;
 
@@ -747,7 +747,7 @@ public final class DcTracker extends DcTrackerBase {
             if (apnContext.getState() == DctConstants.State.IDLE) {
                 ArrayList<DataProfile> waitingDps =
                         buildWaitingApns(apnContext.getDataProfileType(), radioTech);
-                if (waitingApns.isEmpty()) {
+                if (waitingDps.isEmpty()) {
                     notifyOffApnsOfAvailability(apnContext.getReason());
                     retValue = setupData(apnContext, radioTech);
                     if(!retValue) {
@@ -758,14 +758,14 @@ public final class DcTracker extends DcTrackerBase {
                 } else {
                     apnContext.setWaitingDataProfiles(waitingDps);
                     if (DBG) {
-                        log ("trySetupData: Create from mAllDps : "
-                                    + apnListToString(mAllDps));
+                        log ("trySetupData: Create from waitingDps : "
+                                    + apnListToString(waitingDps));
                     }
                 }
             }
 
             if (DBG) {
-                log("trySetupData: call setupData, waitingApns : "
+                log("trySetupData: call setupData, apnContext.getWaitingApns() : "
                         + apnListToString(apnContext.getWaitingApns()));
             }
             retValue = setupData(apnContext, radioTech);
@@ -1017,7 +1017,8 @@ public final class DcTracker extends DcTrackerBase {
     private DataProfile makeDataProfile(Cursor cursor) {
         String[] types = parseTypes(
                 cursor.getString(cursor.getColumnIndexOrThrow(Telephony.Carriers.TYPE)));
-        DataProfile apn = new DataProfile(
+
+        return (DataProfile) new ApnSetting(
                 cursor.getInt(cursor.getColumnIndexOrThrow(Telephony.Carriers._ID)),
                 cursor.getString(cursor.getColumnIndexOrThrow(Telephony.Carriers.NUMERIC)),
                 cursor.getString(cursor.getColumnIndexOrThrow(Telephony.Carriers.NAME)),
@@ -1043,7 +1044,6 @@ public final class DcTracker extends DcTrackerBase {
                 cursor.getInt(cursor.getColumnIndexOrThrow(
                         Telephony.Carriers.CARRIER_ENABLED)) == 1,
                 cursor.getInt(cursor.getColumnIndexOrThrow(Telephony.Carriers.BEARER)));
-        return apn;
     }
 
     private ArrayList<DataProfile> createApnList(Cursor cursor) {
@@ -1139,8 +1139,8 @@ public final class DcTracker extends DcTrackerBase {
                     types = mDefaultApnTypes;
                     apnId = mDefaultApnId;
                 }
-                apnSetting = new DataProfile(apnId, "", "", "", "", "", "", "", "", "",
-                                            "", 0, types, "IP", "IP", true, 0);
+                apnSetting = (DataProfile) new ApnSetting(apnId, "", "", "", "", "", "", "", "", "",
+                                            "", 0, types, PROPERTY_CDMA_IPPROTOCOL, PROPERTY_CDMA_ROAMING_IPPROTOCOL, true, 0);
                 if (DBG) log("setupData: CDMA detected and apnSetting == null, use stubbed CDMA APN setting= " + apnSetting);
             } else {
                 if (DBG) log("setupData: return for no apn found!");
@@ -1914,7 +1914,7 @@ public final class DcTracker extends DcTrackerBase {
 
     /**
      * Error has occurred during the SETUP {aka bringUP} request and the DCT
-     * should either try the next waiting APN or start over from the
+     * should either try the next waiting DataProfile or start over from the
      * beginning if the list is empty. Between each SETUP request there will
      * be a delay defined by {@link #getApnDelay()}.
      */
@@ -2216,15 +2216,17 @@ public final class DcTracker extends DcTrackerBase {
                 PhoneConstants.APN_TYPE_FOTA,
                 PhoneConstants.APN_TYPE_IMS,
                 PhoneConstants.APN_TYPE_CBS};
+
         String[] dunApnTypes = {
                 PhoneConstants.APN_TYPE_DUN};
 
-        DataProfile apn = new DataProfile(DctConstants.APN_DEFAULT_ID, operator, null, null,
+        DataProfile apn = (DataProfile) new ApnSetting(DctConstants.APN_DEFAULT_ID, operator, null, null,
                 null, null, null, null, null, null, null,
                 RILConstants.SETUP_DATA_AUTH_PAP_CHAP, defaultApnTypes,
                 PROPERTY_CDMA_IPPROTOCOL, PROPERTY_CDMA_ROAMING_IPPROTOCOL, true, 0);
         mAllDps.add(apn);
-        apn = new DataProfile(DctConstants.APN_DUN_ID, operator, null, null,
+
+        apn = (DataProfile) new ApnSetting(DctConstants.APN_DUN_ID, operator, null, null,
                 null, null, null, null, null, null, null,
                 RILConstants.SETUP_DATA_AUTH_PAP_CHAP, dunApnTypes,
                 PROPERTY_CDMA_IPPROTOCOL, PROPERTY_CDMA_ROAMING_IPPROTOCOL, true, 0);
@@ -2264,8 +2266,8 @@ public final class DcTracker extends DcTrackerBase {
      * Build a list of APNs to be used to create PDP's.
      *
      * @param requestedApnType
-     * @return waitingApns list to be used to create PDP
-     *          error when waitingApns.isEmpty()
+     * @return waitingDps list to be used to create PDP
+     *          error when waitingDps.isEmpty()
      */
     private ArrayList<DataProfile> buildWaitingApns(String requestedApnType, int radioTech) {
         if (DBG) log("buildWaitingApns: E requestedApnType=" + requestedApnType);
@@ -2352,6 +2354,7 @@ public final class DcTracker extends DcTrackerBase {
     }
 
     private String apnListToString (ArrayList<DataProfile> apns) {
+        if (apns == null) { return ""; }
         StringBuilder result = new StringBuilder();
         for (int i = 0, size = apns.size(); i < size; i++) {
             result.append('[')

@@ -246,8 +246,8 @@ public final class RuimRecords extends IccRecords {
      *  provided the RUIM card. Returns null of RUIM is not yet ready
      */
     public String getRUIMOperatorNumeric() {
-        String carrierID = SystemProperties.get(PROPERTY_ICC_OPERATOR_NUMERIC).trim();
-        if (!carrierID.isEmpty() && carrierID.length == 6) { return carrierID; }
+        String carrierID = SystemProperties.get("ro.cdma.home.operator.numeric").trim();
+        if (!carrierID.isEmpty() && carrierID.length() == 6) { return carrierID; }
 
         if (mImsi == null) {
             return null;
