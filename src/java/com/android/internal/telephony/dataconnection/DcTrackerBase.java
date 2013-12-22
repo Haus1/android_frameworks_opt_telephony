@@ -183,7 +183,7 @@ public abstract class DcTrackerBase extends Handler {
 
 
 
-    protected static final String DEFALUT_DATA_ON_BOOT_PROP = "net.def_data_on_boot";
+    protected static final String DEFAULT_DATA_ON_BOOT_PROP = "net.def_data_on_boot";
 
     protected DcTesterFailBringUpAll mDcTesterFailBringUpAll;
     protected DcController mDcc;
@@ -558,7 +558,7 @@ public abstract class DcTrackerBase extends Handler {
         // and 2) whether the RIL will setup the baseband to auto-PS attach.
 
         mDataEnabled[DctConstants.APN_DEFAULT_ID] =
-                SystemProperties.getBoolean(DEFALUT_DATA_ON_BOOT_PROP,true);
+                SystemProperties.getBoolean(DEFAULT_DATA_ON_BOOT_PROP,true);
         if (mDataEnabled[DctConstants.APN_DEFAULT_ID]) {
             mEnabledCount++;
         }

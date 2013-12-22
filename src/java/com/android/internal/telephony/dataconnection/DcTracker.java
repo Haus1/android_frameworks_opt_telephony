@@ -70,6 +70,8 @@ import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.HashMap;
 
+import static com.android.internal.telephony.cdma.CDMAPhone.PROPERTY_CDMA_HOME_OPERATOR_NUMERIC;
+
 /**
  * {@hide}
  */
@@ -117,7 +119,7 @@ public final class DcTracker extends DcTrackerBase {
 
     public DcTracker(PhoneBase p) {
         super(p);
-        if (DBG) log("GsmDCT.constructor");
+        if (DBG) log("DCT.constructor");
         p.mCi.registerForAvailable (this, DctConstants.EVENT_RADIO_AVAILABLE, null);
         p.mCi.registerForOffOrNotAvailable(this, DctConstants.EVENT_RADIO_OFF_OR_NOT_AVAILABLE,
                 null);
@@ -169,7 +171,7 @@ public final class DcTracker extends DcTrackerBase {
 
     @Override
     public void dispose() {
-        if (DBG) log("GsmDCT.dispose");
+        if (DBG) log("DCT.dispose");
         cleanUpAllConnections(true, null);
 
         super.dispose();
@@ -240,7 +242,7 @@ public final class DcTracker extends DcTrackerBase {
 
     protected void initApnContexts() {
         log("initApnContexts: E");
-        boolean defaultEnabled = SystemProperties.getBoolean(DEFALUT_DATA_ON_BOOT_PROP, true);
+        boolean defaultEnabled = SystemProperties.getBoolean(DEFAULT_DATA_ON_BOOT_PROP, true);
         // Load device network attributes from resources
         String[] networkConfigStrings = mPhone.getContext().getResources().getStringArray(
                 com.android.internal.R.array.networkAttributes);
@@ -1968,26 +1970,27 @@ public final class DcTracker extends DcTrackerBase {
     private void createAllApnList() {
         mAllApnSettings = new ArrayList<ApnSetting>();
         IccRecords r = mIccRecords.get();
-        String operator = (r != null) ? r.getOperatorNumeric() : "";
-        if (operator != null) {
-            String selection = "numeric = '" + operator + "'";
-            // query only enabled apn.
-            // carrier_enabled : 1 means enabled apn, 0 disabled apn.
-            selection += " and carrier_enabled = 1";
-            if (DBG) log("createAllApnList: selection=" + selection);
+        String operator=(r != null && r.getOperatorNumeric() != null) ? r.getOperatorNumeric() : "";
+        String selection = "numeric = '" + operator + "'";
+        // query only enabled apn.
+        // carrier_enabled : 1 means enabled apn, 0 disabled apn.
+        selection += " and carrier_enabled = 1";
+        if (DBG) log("createAllApnList: selection=" + selection);
 
-            Cursor cursor = mPhone.getContext().getContentResolver().query(
-                    Telephony.Carriers.CONTENT_URI, null, selection, null, null);
+        Cursor cursor = mPhone.getContext().getContentResolver().query(
+                Telephony.Carriers.CONTENT_URI, null, selection, null, null);
 
-            if (cursor != null) {
-                if (cursor.getCount() > 0) {
-                    mAllApnSettings = createApnList(cursor);
-                }
-                cursor.close();
+        if (cursor != null) {
+            if (cursor.getCount() > 0) {
+                mAllApnSettings = createApnList(cursor);
             }
+            cursor.close();
         }
 
-        if (mAllApnSettings.isEmpty() && mPhone.getPhoneType() == PhoneConstants.PHONE_TYPE_CDMA) {
+        // This is still needed for Sprint EVDO/1xRTT.
+        // The MNC is sometimes returned as 00(wildcard?), instead of the expected 120, so use props
+        String strNumericCDMA = SystemProperties.get(PROPERTY_CDMA_HOME_OPERATOR_NUMERIC, "00000");
+        if (mAllApnSettings.isEmpty() && strNumericCDMA.equals("310120")) {
             // Create dummy data profile.
             if (DBG) log("createAllApnList: Creating dummy apn for cdma operator:" + operator);
             String[] mDefaultApnTypes = {
@@ -2000,7 +2003,8 @@ public final class DcTracker extends DcTrackerBase {
                     PhoneConstants.APN_TYPE_CBS };
             ApnSetting apn = new ApnSetting(apnTypeToId(PhoneConstants.APN_TYPE_DEFAULT), operator,
                     null, null, null, null, null, null, null, null, null,
-                    RILConstants.SETUP_DATA_AUTH_PAP_CHAP, mDefaultApnTypes, "IP", "IP", true, 0);
+                    RILConstants.SETUP_DATA_AUTH_PAP_CHAP, mDefaultApnTypes,
+                    "IPV4V6", "IPV4V6", true, 0);
             mAllApnSettings.add(apn);
         }
 
