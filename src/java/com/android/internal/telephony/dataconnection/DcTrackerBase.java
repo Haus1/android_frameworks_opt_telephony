@@ -1861,7 +1861,7 @@ public abstract class DcTrackerBase extends Handler {
         pw.println(" mActiveApn=" + mActiveApn);
         ArrayList<ApnSetting> apnSettings = mAllApnSettings;
         if (apnSettings != null) {
-            w.println(" mAllApnSettings size=" + apnSettings.size());
+            pw.println(" mAllApnSettings size=" + apnSettings.size());
             for (int i=0; i < apnSettings.size(); i++) {
                 pw.printf(" mAllApnSettings[%d]: %s\n", i, apnSettings.get(i));
             }

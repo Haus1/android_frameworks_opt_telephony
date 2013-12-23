@@ -1,4 +1,4 @@
-*
+/*
  * Copyright (C) 2007 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -159,7 +159,7 @@ public class CatService extends Handler implements AppInterface {
         if (mUiccController != null) {
             mUiccController.registerForIccChanged(this, MSG_ID_ICC_CHANGED, null);
         } else {
-            CatLog.e(this, "UiccController instance is null");
+            CatLog.d(this, "UiccController instance is null");
         }
 
         // Check if STK application is availalbe
@@ -695,10 +695,10 @@ public class CatService extends Handler implements AppInterface {
                     broadcastCardStateAndIccRefreshResp(CardState.CARDSTATE_PRESENT,
                                   (IccRefreshResponse) ar.result);
                 } else {
-                    CatLog.e(this,"Icc REFRESH with exception: " + ar.exception);
+                    CatLog.d(this,"Icc REFRESH with exception: " + ar.exception);
                 }
             } else {
-                CatLog.e(this, "IccRefresh Message is null");
+                CatLog.d(this, "IccRefresh Message is null");
             }
             break;
         case MSG_ID_TIMEOUT: // Should only be called for Samsung STK
