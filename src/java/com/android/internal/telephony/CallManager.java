@@ -1,4 +1,8 @@
 /*
+ * Copyright (c) 2012, The Linux Foundation. All rights reserved.
+ * Not a Contribution, Apache license notifications and license are retained
+ * for attribution purposes only.
+ *
  * Copyright (C) 2010 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,6 +29,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.os.RegistrantList;
 import android.os.Registrant;
+import android.os.SystemProperties;
 import android.telephony.PhoneStateListener;
 import android.telephony.ServiceState;
 import android.telephony.Rlog;
@@ -78,6 +83,7 @@ public final class CallManager {
     private static final int EVENT_SUPP_SERVICE_FAILED = 117;
     private static final int EVENT_SERVICE_STATE_CHANGED = 118;
     private static final int EVENT_POST_DIAL_CHARACTER = 119;
+    private static final int EVENT_SUPP_SERVICE_NOTIFY = 120;
 
     // Singleton instance
     private static final CallManager INSTANCE = new CallManager();
@@ -160,6 +166,9 @@ public final class CallManager {
     protected final RegistrantList mSuppServiceFailedRegistrants
     = new RegistrantList();
 
+    protected final RegistrantList mSuppServiceNotificationRegistrants
+    = new RegistrantList();
+
     protected final RegistrantList mServiceStateChangedRegistrants
     = new RegistrantList();
 
@@ -220,6 +229,21 @@ public final class CallManager {
      */
     public static boolean isSamePhone(Phone p1, Phone p2) {
         return (getPhoneBase(p1) == getPhoneBase(p2));
+    }
+
+    /**
+     * Returns true if Android supports Csvt calls.
+     */
+    public static boolean isCallOnCsvtEnabled() {
+        return SystemProperties.getBoolean(TelephonyProperties.PROPERTY_CSVT_ENABLED, false);
+    }
+
+    /**
+     * Returns true if Android supports VoLTE/VT calls on IMS
+     */
+    public static boolean isCallOnImsEnabled() {
+        return SystemProperties.getBoolean(
+                TelephonyProperties.CALLS_ON_IMS_ENABLED_PROPERTY, false);
     }
 
     /**
@@ -369,6 +393,22 @@ public final class CallManager {
         return getFirstActiveRingingCall().getPhone();
     }
 
+    /**
+     * @return the phone associated with any call
+     */
+    public Phone getPhoneInCall() {
+        Phone phone = null;
+        if (!getFirstActiveRingingCall().isIdle()) {
+            phone = getFirstActiveRingingCall().getPhone();
+        } else if (!getActiveFgCall().isIdle()) {
+            phone = getActiveFgCall().getPhone();
+        } else {
+            // If BG call is idle, we return default phone
+            phone = getFirstActiveBgCall().getPhone();
+        }
+        return phone;
+    }
+
     public void setAudioMode() {
         Context context = getContext();
         if (context == null) return;
@@ -452,6 +492,10 @@ public final class CallManager {
         phone.registerForMmiComplete(mHandler, EVENT_MMI_COMPLETE, null);
         phone.registerForSuppServiceFailed(mHandler, EVENT_SUPP_SERVICE_FAILED, null);
         phone.registerForServiceStateChanged(mHandler, EVENT_SERVICE_STATE_CHANGED, null);
+        if (phone.getPhoneType() == PhoneConstants.PHONE_TYPE_GSM ||
+                phone.getPhoneType() == PhoneConstants.PHONE_TYPE_IMS) {
+            phone.registerForSuppServiceNotification(mHandler, EVENT_SUPP_SERVICE_NOTIFY, null);
+        }
 
         // for events supported only by GSM and CDMA phone
         if (phone.getPhoneType() == PhoneConstants.PHONE_TYPE_GSM ||
@@ -464,6 +508,10 @@ public final class CallManager {
             phone.registerForCdmaOtaStatusChange(mHandler, EVENT_CDMA_OTA_STATUS_CHANGE, null);
             phone.registerForSubscriptionInfoReady(mHandler, EVENT_SUBSCRIPTION_INFO_READY, null);
             phone.registerForCallWaiting(mHandler, EVENT_CALL_WAITING, null);
+            phone.registerForEcmTimerReset(mHandler, EVENT_ECM_TIMER_RESET, null);
+        }
+
+        if (phone.getPhoneType() == PhoneConstants.PHONE_TYPE_IMS) {
             phone.registerForEcmTimerReset(mHandler, EVENT_ECM_TIMER_RESET, null);
         }
     }
@@ -484,6 +532,10 @@ public final class CallManager {
         phone.unregisterForMmiInitiate(mHandler);
         phone.unregisterForMmiComplete(mHandler);
         phone.unregisterForSuppServiceFailed(mHandler);
+        if (phone.getPhoneType() == PhoneConstants.PHONE_TYPE_GSM ||
+                phone.getPhoneType() == PhoneConstants.PHONE_TYPE_IMS) {
+            phone.unregisterForSuppServiceNotification(mHandler);
+        }
         phone.unregisterForServiceStateChanged(mHandler);
 
         // for events supported only by GSM and CDMA phone
@@ -497,6 +549,10 @@ public final class CallManager {
             phone.unregisterForCdmaOtaStatusChange(mHandler);
             phone.unregisterForSubscriptionInfoReady(mHandler);
             phone.unregisterForCallWaiting(mHandler);
+            phone.unregisterForEcmTimerReset(mHandler);
+        }
+
+        if (phone.getPhoneType() == PhoneConstants.PHONE_TYPE_IMS) {
             phone.unregisterForEcmTimerReset(mHandler);
         }
     }
@@ -515,9 +571,28 @@ public final class CallManager {
      * @exception CallStateException when call is not ringing or waiting
      */
     public void acceptCall(Call ringingCall) throws CallStateException {
+        acceptCall(ringingCall, Phone.CALL_TYPE_VOICE);
+    }
+
+    /**
+     * Answers a ringing or waiting call, with an option to downgrade a Video
+     * call Active call, if any, go on hold. If active call can't be held, i.e.,
+     * a background call of the same channel exists, the active call will be
+     * hang up. Answering occurs asynchronously, and final notification occurs
+     * via
+     * {@link #registerForPreciseCallStateChanged(android.os.Handler, int, java.lang.Object)
+     * registerForPreciseCallStateChanged()}.
+     *
+     * @param ringingCall The call to answer
+     * @param callType The call type to use to answer the call. Values from
+     *            Phone.RIL_CALL_TYPE
+     * @exception CallStateException when call is not ringing or waiting
+     */
+    public void acceptCall(Call ringingCall, int callType) throws CallStateException {
         Phone ringingPhone = ringingCall.getPhone();
 
         if (VDBG) {
+            Rlog.d(LOG_TAG, "acceptCall api with calltype " + callType);
             Rlog.d(LOG_TAG, "acceptCall(" +ringingCall + " from " + ringingCall.getPhone() + ")");
             Rlog.d(LOG_TAG, toString());
         }
@@ -557,9 +632,14 @@ public final class CallManager {
             }
         }
 
-        ringingPhone.acceptCall();
+        if (ringingPhone.getPhoneType() == PhoneConstants.PHONE_TYPE_IMS) {
+            ringingPhone.acceptCall(callType);
+        } else {
+            ringingPhone.acceptCall();
+        }
 
         if (VDBG) {
+            Rlog.d(LOG_TAG, "Call type in acceptCall " + callType);
             Rlog.d(LOG_TAG, "End acceptCall(" +ringingCall + ")");
             Rlog.d(LOG_TAG, toString());
         }
@@ -740,6 +820,26 @@ public final class CallManager {
      * handled asynchronously.
      */
     public Connection dial(Phone phone, String dialString) throws CallStateException {
+        return dial(phone, dialString, Phone.CALL_TYPE_VOICE, null);
+    }
+
+    /**
+     * Initiate a new connection. This happens asynchronously, so you cannot
+     * assume the audio path is connected (or a call index has been assigned)
+     * until PhoneStateChanged notification has occurred.
+     *
+     * @exception CallStateException if a new outgoing call is not currently
+     *                possible because no more call slots exist or a call exists
+     *                that is dialing, alerting, ringing, or waiting. Other
+     *                errors are handled asynchronously.
+     * @param phone The phone to use to place the call
+     * @param dialString The phone number or URI that identifies the remote
+     *            party
+     * @param calldetails
+     */
+    public Connection dial(Phone phone, String dialString, int callType, String[] extras)
+            throws CallStateException {
+
         Phone basePhone = getPhoneBase(phone);
         Connection result;
 
@@ -771,7 +871,11 @@ public final class CallManager {
             }
         }
 
-        result = basePhone.dial(dialString);
+        if (phone.getPhoneType() == PhoneConstants.PHONE_TYPE_IMS) {
+            result = basePhone.dial(dialString, callType, extras);
+        } else {
+            result = basePhone.dial(dialString);
+        }
 
         if (VDBG) {
             Rlog.d(LOG_TAG, "End dial(" + basePhone + ", "+ dialString + ")");
@@ -1310,6 +1414,27 @@ public final class CallManager {
     }
 
     /**
+     * Register for supplementary service notifications.
+     * Message.obj will contain an AsyncResult.
+     *
+     * @param h Handler that receives the notification message.
+     * @param what User-defined message code.
+     * @param obj User object.
+     */
+    public void registerForSuppServiceNotification(Handler h, int what, Object obj){
+        mSuppServiceNotificationRegistrants.addUnique(h, what, obj);
+    }
+
+    /**
+     * Unregister for supplementary service notifications.
+     *
+     * @param h Handler to be removed from the registrant list.
+     */
+    public void unregisterForSuppServiceNotification(Handler h){
+        mSuppServiceNotificationRegistrants.remove(h);
+    }
+
+    /**
      * Register for notifications when a sInCall VoicePrivacy is enabled
      *
      * @param h Handler that receives the notification message.
@@ -1727,6 +1852,20 @@ public final class CallManager {
         return false;
     }
 
+    /**
+     * @return true if the IMS phone has any active calls. ie. there are active
+     *         IMS calls at present
+     */
+    public boolean isImsPhoneActive() {
+        for (Phone phone : mPhones) {
+            if (phone.getPhoneType() == PhoneConstants.PHONE_TYPE_IMS
+                    && phone.getState() != PhoneConstants.State.IDLE) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private Handler mHandler = new Handler() {
 
         @Override
@@ -1817,6 +1956,10 @@ public final class CallManager {
                 case EVENT_SUPP_SERVICE_FAILED:
                     if (VDBG) Rlog.d(LOG_TAG, " handleMessage (EVENT_SUPP_SERVICE_FAILED)");
                     mSuppServiceFailedRegistrants.notifyRegistrants((AsyncResult) msg.obj);
+                    break;
+                case EVENT_SUPP_SERVICE_NOTIFY:
+                    if (VDBG) Rlog.d(LOG_TAG, " handleMessage (EVENT_SUPP_SERVICE_NOTIFICATION)");
+                    mSuppServiceNotificationRegistrants.notifyRegistrants((AsyncResult) msg.obj);
                     break;
                 case EVENT_SERVICE_STATE_CHANGED:
                     if (VDBG) Rlog.d(LOG_TAG, " handleMessage (EVENT_SERVICE_STATE_CHANGED)");

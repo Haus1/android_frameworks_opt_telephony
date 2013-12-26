@@ -76,6 +76,11 @@ abstract class SipPhoneBase extends PhoneBase {
         return dial(dialString);
     }
 
+//    @Override
+//    public Connection dial(String dialString, int callType, String[] extras) throws CallStateException {
+//        throw new CallStateException("dial(String dialString, int callType, String[] extras) is not implemented in SipPhone");
+//    }
+
     void migrateFrom(SipPhoneBase from) {
         migrate(mRingbackRegistrants, from.mRingbackRegistrants);
         migrate(mPreciseCallStateRegistrants, from.mPreciseCallStateRegistrants);

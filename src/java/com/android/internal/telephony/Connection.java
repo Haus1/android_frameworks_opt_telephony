@@ -18,6 +18,7 @@ package com.android.internal.telephony;
 
 import android.telephony.Rlog;
 import android.util.Log;
+import com.android.internal.telephony.CallStateException;
 
 /**
  * {@hide}
@@ -71,6 +72,13 @@ public abstract class Connection {
     }
 
     Object mUserData;
+
+    /*
+     * This time/timespan values are based on SystemClock.elapsedRealTime(),
+     * i.e., time since boot.  They are appropriate for comparison and
+     * calculating deltas.
+     */
+    public long mConnectTimeReal;
 
     /* Instance Methods */
 
@@ -285,6 +293,16 @@ public abstract class Connection {
      * @return UUSInfo containing the UUS userdata.
      */
     public abstract UUSInfo getUUSInfo();
+
+    /**
+     * Gets connection index associated with connection.
+     * @return index or exception if unavailable or phone
+     * does not support this API
+     */
+
+    public int getIndex() throws CallStateException {
+        throw new CallStateException("Connection index not assigned");
+    }
 
     /**
      * Build a human representation of a connection instance, suitable for debugging.

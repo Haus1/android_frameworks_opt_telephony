@@ -1,6 +1,9 @@
 /*
+ * Copyright (c) 2012-13, The Linux Foundation. All rights reserved.
+ * Not a Contribution, Apache license notifications and license are retained
+ * for attribution purposes only.
+ *
  * Copyright (C) 2008 The Android Open Source Project
- * Copyright (c) 2013, The Linux Foundation. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -570,6 +573,21 @@ public class PhoneProxy extends Handler implements Phone {
     }
 
     @Override
+    public void acceptCall(int callType) throws CallStateException {
+        mActivePhone.acceptCall(callType);
+    }
+
+    @Override
+    public int getCallType(Call call) throws CallStateException {
+        return mActivePhone.getCallType(call);
+    }
+
+    @Override
+    public int getCallDomain(Call call) throws CallStateException {
+        return mActivePhone.getCallDomain(call);
+    }
+
+    @Override
     public void rejectCall() throws CallStateException {
         mActivePhone.rejectCall();
     }
@@ -637,6 +655,12 @@ public class PhoneProxy extends Handler implements Phone {
     @Override
     public Connection dial(String dialString, UUSInfo uusInfo) throws CallStateException {
         return mActivePhone.dial(dialString, uusInfo);
+    }
+
+    @Override
+    public Connection dial(String dialString, int callType, String[] extras)
+            throws CallStateException {
+        return mActivePhone.dial(dialString, callType, extras);
     }
 
     @Override
@@ -1186,5 +1210,23 @@ public class PhoneProxy extends Handler implements Phone {
     public void removeReferences() {
         mActivePhone = null;
         mCommandsInterface = null;
+    }
+
+//    public void getCallBarringOption(String facility, String password, Message onComplete) {
+//        mActivePhone.getCallBarringOption(facility, password, onComplete);
+//    }
+
+//    public void setCallBarringOption(String facility, boolean lockState, String password,
+//            Message onComplete) {
+//        mActivePhone.setCallBarringOption(facility, lockState, password, onComplete);
+//    }
+
+//    public void requestChangeCbPsw(String facility, String oldPwd, String newPwd, Message result) {
+//        mActivePhone.requestChangeCbPsw(facility, oldPwd, newPwd, result);
+//    }
+
+    @Override
+    public boolean isRadioOn() {
+        return mCommandsInterface.getRadioState().isOn();
     }
 }

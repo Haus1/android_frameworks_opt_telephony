@@ -118,6 +118,7 @@ public class PhoneFactory {
                 Rlog.i(LOG_TAG, "RILClassname is " + sRILClassname);
 
                 // Use reflection to construct the RIL class (defaults to RIL)
+                Class<?> classDefinition = null;
                 try {
                     sCommandsInterface = instantiateCustomRIL(
                                             sRILClassname, context, networkMode, cdmaSubscription);

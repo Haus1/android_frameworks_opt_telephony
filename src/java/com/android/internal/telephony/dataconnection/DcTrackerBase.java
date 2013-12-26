@@ -1,5 +1,8 @@
 /*
  * Copyright (C) 2006 The Android Open Source Project
+ * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+ *
+ * Not a Contribution.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -266,14 +269,14 @@ public abstract class DcTrackerBase extends Handler {
                 }
             } );
 
-    /* Currently active APN */
-    protected ApnSetting mActiveApn;
+    /** Currently active data profile */
+    protected DataProfile mActiveDp;
 
-    /** allApns holds all apns */
-    protected ArrayList<ApnSetting> mAllApnSettings = null;
+    /** Holds all data profiles */
+    protected ArrayList<DataProfile> mAllDps = new ArrayList<DataProfile>();
 
-    /** preferred apn */
-    protected ApnSetting mPreferredApn = null;
+    /** preferred data profile */
+    protected DataProfile mPreferredDp = null;
 
     /** Is packet service restricted by network */
     protected boolean mIsPsRestricted = false;
@@ -598,15 +601,15 @@ public abstract class DcTrackerBase extends Handler {
     public boolean isApnTypeActive(String type) {
         // TODO: support simultaneous with List instead
         if (PhoneConstants.APN_TYPE_DUN.equals(type)) {
-            ApnSetting dunApn = fetchDunApn();
+            DataProfile dunApn = fetchDunApn();
             if (dunApn != null) {
-                return ((mActiveApn != null) && (dunApn.toString().equals(mActiveApn.toString())));
+                return ((mActiveDp != null) && (dunApn.toHash().equals(mActiveDp.toHash())));
             }
         }
-        return mActiveApn != null && mActiveApn.canHandleType(type);
+        return mActiveDp != null && mActiveDp.canHandleType(type);
     }
 
-    protected ApnSetting fetchDunApn() {
+    protected DataProfile fetchDunApn() {
         if (SystemProperties.getBoolean("net.tethering.noprovisioning", false)) {
             log("fetchDunApn: net.tethering.noprovisioning=true ret: null");
             return null;
@@ -632,8 +635,8 @@ public abstract class DcTrackerBase extends Handler {
 
     public String[] getActiveApnTypes() {
         String[] result;
-        if (mActiveApn != null) {
-            result = mActiveApn.types;
+        if (mActiveDp != null) {
+            result = mActiveDp.types;
         } else {
             result = new String[1];
             result[0] = PhoneConstants.APN_TYPE_DEFAULT;
@@ -644,8 +647,8 @@ public abstract class DcTrackerBase extends Handler {
     /** TODO: See if we can remove */
     public String getActiveApnString(String apnType) {
         String result = null;
-        if (mActiveApn != null) {
-            result = mActiveApn.apn;
+        if (mActiveDp != null) {
+            result = mActiveDp.apn;
         }
         return result;
     }
@@ -1306,7 +1309,6 @@ public abstract class DcTrackerBase extends Handler {
 
     protected void onSetUserDataEnabled(boolean enabled) {
         synchronized (mDataEnabledLock) {
-            final boolean prevEnabled = getAnyDataEnabled();
             if (mUserDataEnabled != enabled) {
                 mUserDataEnabled = enabled;
                 Settings.Global.putInt(mPhone.getContext().getContentResolver(),
@@ -1319,12 +1321,11 @@ public abstract class DcTrackerBase extends Handler {
                         notifyOffApnsOfAvailability(Phone.REASON_DATA_DISABLED);
                     }
                 }
-                if (prevEnabled != getAnyDataEnabled()) {
-                    if (!prevEnabled) {
-                        onTrySetupData(Phone.REASON_DATA_ENABLED);
-                    } else {
-                        onCleanUpAllConnections(Phone.REASON_DATA_DISABLED);
-                    }
+
+                if (enabled) {
+                    onTrySetupData(Phone.REASON_DATA_ENABLED);
+                } else {
+                    onCleanUpAllConnections(Phone.REASON_DATA_DISABLED);
                 }
             }
         }
@@ -1335,15 +1336,12 @@ public abstract class DcTrackerBase extends Handler {
 
     protected void onSetPolicyDataEnabled(boolean enabled) {
         synchronized (mDataEnabledLock) {
-            final boolean prevEnabled = getAnyDataEnabled();
             if (sPolicyDataEnabled != enabled) {
                 sPolicyDataEnabled = enabled;
-                if (prevEnabled != getAnyDataEnabled()) {
-                    if (!prevEnabled) {
-                        onTrySetupData(Phone.REASON_DATA_ENABLED);
-                    } else {
-                        onCleanUpAllConnections(Phone.REASON_DATA_DISABLED);
-                    }
+                if (enabled) {
+                    onTrySetupData(Phone.REASON_DATA_ENABLED);
+                } else {
+                    onCleanUpAllConnections(Phone.REASON_DATA_DISABLED);
                 }
             }
         }
@@ -1659,18 +1657,18 @@ public abstract class DcTrackerBase extends Handler {
     }
 
     protected void setInitialAttachApn() {
-        ApnSetting iaApnSetting = null;
-        ApnSetting defaultApnSetting = null;
-        ApnSetting firstApnSetting = null;
+        DataProfile iaApnSetting = null;
+        DataProfile defaultApnSetting = null;
+        DataProfile firstApnSetting = null;
 
-        log("setInitialApn: E mPreferredApn=" + mPreferredApn);
+        log("setInitialApn: E mPreferredApn=" + mPreferredDp);
 
-        if (mAllApnSettings != null && !mAllApnSettings.isEmpty()) {
-            firstApnSetting = mAllApnSettings.get(0);
+        if (mAllDps != null && !mAllDps.isEmpty()) {
+            firstApnSetting = mAllDps.get(0);
             log("setInitialApn: firstApnSetting=" + firstApnSetting);
 
             // Search for Initial APN setting and the first apn that can handle default
-            for (ApnSetting apn : mAllApnSettings) {
+            for (DataProfile apn : mAllDps) {
                 // Can't use apn.canHandleType(), as that returns true for APNs that have no type.
                 if (ArrayUtils.contains(apn.types, PhoneConstants.APN_TYPE_IA)) {
                     // The Initial Attach APN is highest priority so use it if there is one
@@ -1692,13 +1690,13 @@ public abstract class DcTrackerBase extends Handler {
         //   3) The first apn that than handle APN_TYPE_DEFAULT
         //   4) The first APN we can find.
 
-        ApnSetting initialAttachApnSetting = null;
+        DataProfile initialAttachApnSetting = null;
         if (iaApnSetting != null) {
             if (DBG) log("setInitialAttachApn: using iaApnSetting");
             initialAttachApnSetting = iaApnSetting;
-        } else if (mPreferredApn != null) {
+        } else if (mPreferredDp != null) {
             if (DBG) log("setInitialAttachApn: using mPreferredApn");
-            initialAttachApnSetting = mPreferredApn;
+            initialAttachApnSetting = mPreferredDp;
         } else if (defaultApnSetting != null) {
             if (DBG) log("setInitialAttachApn: using defaultApnSetting");
             initialAttachApnSetting = defaultApnSetting;
@@ -1858,18 +1856,18 @@ public abstract class DcTrackerBase extends Handler {
             pw.println(" mApnContexts=null");
         }
         pw.flush();
-        pw.println(" mActiveApn=" + mActiveApn);
-        ArrayList<ApnSetting> apnSettings = mAllApnSettings;
+        pw.println(" mActiveDp=" + mActiveDp);
+        ArrayList<DataProfile> apnSettings = mAllDps;
         if (apnSettings != null) {
-            w.println(" mAllApnSettings size=" + apnSettings.size());
+            pw.println(" mAllDps size=" + apnSettings.size());
             for (int i=0; i < apnSettings.size(); i++) {
-                pw.printf(" mAllApnSettings[%d]: %s\n", i, apnSettings.get(i));
+                pw.printf(" mAllDps[%d]: %s\n", i, apnSettings.get(i));
             }
             pw.flush();
         } else {
-            pw.println(" mAllApnSettings=null");
+            pw.println(" mAllDps=null");
         }
-        pw.println(" mPreferredApn=" + mPreferredApn);
+        pw.println(" mPreferredDp=" + mPreferredDp);
         pw.println(" mIsPsRestricted=" + mIsPsRestricted);
         pw.println(" mIsDisposed=" + mIsDisposed);
         pw.println(" mIntentReceiver=" + mIntentReceiver);

@@ -29,7 +29,7 @@ import com.android.internal.telephony.uicc.IsimRecords;
 public class PhoneSubInfo extends IPhoneSubInfo.Stub {
     static final String LOG_TAG = "PhoneSubInfo";
     private static final boolean DBG = true;
-    private static final boolean VDBG = false; // STOPSHIP if true
+    private static final boolean VDBG = true; // STOPSHIP if true
 
     private Phone mPhone;
     private Context mContext;

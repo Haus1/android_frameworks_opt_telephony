@@ -1,4 +1,8 @@
 /*
+ * Copyright (c) 2013, Linux Foundation. All rights reserved.
+ * Not a Contribution, Apache license notifications and license are retained
+ * for attribution purposes only.
+ *
  * Copyright (C) 2006 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,6 +23,7 @@ package com.android.internal.telephony.uicc;
 import static com.android.internal.telephony.TelephonyProperties.PROPERTY_ICC_OPERATOR_ALPHA;
 import static com.android.internal.telephony.TelephonyProperties.PROPERTY_ICC_OPERATOR_ISO_COUNTRY;
 import static com.android.internal.telephony.TelephonyProperties.PROPERTY_ICC_OPERATOR_NUMERIC;
+import static com.android.internal.telephony.TelephonyProperties.PROPERTY_APN_SIM_OPERATOR_NUMERIC;
 import android.content.Context;
 import android.os.AsyncResult;
 import android.os.Message;
@@ -32,6 +37,7 @@ import com.android.internal.telephony.CommandsInterface;
 import com.android.internal.telephony.MccTable;
 import com.android.internal.telephony.SmsConstants;
 import com.android.internal.telephony.gsm.SimTlv;
+import com.android.internal.telephony.uicc.IccCardApplicationStatus.AppType;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
@@ -236,6 +242,7 @@ public class SIMRecords extends IccRecords {
 
         log("SIMRecords: onRadioOffOrNotAvailable set 'gsm.sim.operator.numeric' to operator=null");
         SystemProperties.set(PROPERTY_ICC_OPERATOR_NUMERIC, null);
+        SystemProperties.set(PROPERTY_APN_SIM_OPERATOR_NUMERIC, null);
         SystemProperties.set(PROPERTY_ICC_OPERATOR_ALPHA, null);
         SystemProperties.set(PROPERTY_ICC_OPERATOR_ISO_COUNTRY, null);
 
@@ -271,6 +278,23 @@ public class SIMRecords extends IccRecords {
         return mUsimServiceTable;
     }
 
+    private int getExtFromEf(int ef) {
+        int ext;
+        switch (ef) {
+            case EF_MSISDN:
+                /* For USIM apps use EXT5. (TS 31.102 Section 4.2.37) */
+                if (mParentApp.getType() == AppType.APPTYPE_USIM) {
+                    ext = EF_EXT5;
+                } else {
+                    ext = EF_EXT1;
+                }
+                break;
+            default:
+                ext = EF_EXT1;
+        }
+        return ext;
+    }
+
     /**
      * Set subscriber number to SIM record
      *
@@ -295,10 +319,9 @@ public class SIMRecords extends IccRecords {
 
         if(DBG) log("Set MSISDN: " + mMsisdnTag + " " + /*mMsisdn*/ "xxxxxxx");
 
-
         AdnRecord adn = new AdnRecord(mMsisdnTag, mMsisdn);
 
-        new AdnRecordLoader(mFh).updateEF(adn, EF_MSISDN, EF_EXT1, 1, null,
+        new AdnRecordLoader(mFh).updateEF(adn, EF_MSISDN, getExtFromEf(EF_MSISDN), 1, null,
                 obtainMessage(EVENT_SET_MSISDN_DONE, onComplete));
     }
 
@@ -1181,6 +1204,24 @@ public class SIMRecords extends IccRecords {
                 mFh.loadEFTransparent(EF_CSP_CPHS,
                         obtainMessage(EVENT_GET_CSP_CPHS_DONE));
                 break;
+            case EF_MSISDN:
+                mRecordsToLoad++;
+                log("SIM Refresh called for EF_MSISDN");
+                new AdnRecordLoader(mFh).loadFromEF(EF_MSISDN, getExtFromEf(EF_MSISDN), 1,
+                        obtainMessage(EVENT_GET_MSISDN_DONE));
+                break;
+            case EF_CFIS:
+                mRecordsToLoad++;
+                log("SIM Refresh called for EF_CFIS");
+                mFh.loadEFLinearFixed(EF_CFIS,
+                        1, obtainMessage(EVENT_GET_CFIS_DONE));
+                break;
+            case EF_CFF_CPHS:
+                mRecordsToLoad++;
+                log("SIM Refresh called for EF_CFF_CPHS");
+                mFh.loadEFTransparent(EF_CFF_CPHS,
+                        obtainMessage(EVENT_GET_CFF_DONE));
+                break;
             default:
                 // For now, fetch all records if this is not a
                 // voicemail number.
@@ -1282,6 +1323,7 @@ public class SIMRecords extends IccRecords {
             log("onAllRecordsLoaded set 'gsm.sim.operator.numeric' to operator='" +
                     operator + "'");
             SystemProperties.set(PROPERTY_ICC_OPERATOR_NUMERIC, operator);
+            SystemProperties.set(PROPERTY_APN_SIM_OPERATOR_NUMERIC, operator);
         } else {
             log("onAllRecordsLoaded empty 'gsm.sim.operator.numeric' skipping");
         }
@@ -1336,7 +1378,7 @@ public class SIMRecords extends IccRecords {
 
         // FIXME should examine EF[MSISDN]'s capability configuration
         // to determine which is the voice/data/fax line
-        new AdnRecordLoader(mFh).loadFromEF(EF_MSISDN, EF_EXT1, 1,
+        new AdnRecordLoader(mFh).loadFromEF(EF_MSISDN, getExtFromEf(EF_MSISDN), 1,
                     obtainMessage(EVENT_GET_MSISDN_DONE));
         mRecordsToLoad++;
 

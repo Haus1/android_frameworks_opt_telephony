@@ -1031,6 +1031,17 @@ public interface CommandsInterface {
     void sendSMS (String smscPDU, String pdu, Message response);
 
     /**
+     * Send an SMS message, Identical to sendSMS,
+     * except that more messages are expected to be sent soon.
+     * smscPDU is smsc address in PDU form GSM BCD format prefixed
+     *      by a length byte (as expected by TS 27.005) or NULL for default SMSC
+     * pdu is SMS in PDU format as an ASCII hex string
+     *      less the SMSC address
+     */
+    void sendSMSExpectMore (String smscPDU, String pdu, Message response);
+
+
+    /**
      * @param pdu is CDMA-SMS in internal pseudo-PDU format
      * @param response sent when operation completes
      */
@@ -1623,6 +1634,18 @@ public interface CommandsInterface {
     public int getLteOnCdmaMode();
 
     /**
+     * Get the data call profile information from the modem
+     *
+     * @param appType
+     *          Callback message containing the count and the list of {@link
+     *          RIL_DataCallProfileInfo}
+     *
+     * @param result
+     *          Callback message
+     */
+    public void getDataCallProfile(int appType, Message result);
+
+    /**
      * Request the ISIM application on the UICC to perform the AKA
      * challenge/response algorithm for IMS authentication. The nonce string
      * and challenge response are Base64 encoded Strings.
@@ -1704,6 +1727,65 @@ public interface CommandsInterface {
      * Ask the RIL about the presence of back-compat flags
      */
      public boolean needsOldRilFeature(String feature);
+
+    /**
+     * Open a logical channel to the SIM.
+     *
+     * Input parameters equivalent to TS 27.007 AT+CCHO command.
+     *
+     * @param AID Application id. See ETSI 102.221 and 101.220.
+     * @param response Callback message. response.obj will be an int [1] with
+     *            element [0] set to the id of the logical channel.
+     */
+    public void iccOpenLogicalChannel(String AID, Message response);
+
+    /**
+     * Close a previously opened logical channel to the SIM.
+     *
+     * Input parameters equivalent to TS 27.007 AT+CCHC command.
+     *
+     * @param channel Channel id. Id of the channel to be closed.
+     * @param response Callback message.
+     */
+    public void iccCloseLogicalChannel(int channel, Message response);
+
+    /**
+     * Exchange APDUs with the SIM on a logical channel.
+     *
+     * Input parameters equivalent to TS 27.007 AT+CGLA command.
+     *
+     * @param channel Channel id of the channel to use for communication. Has to
+     *            be greater than zero.
+     * @param cla Class of the APDU command.
+     * @param instruction Instruction of the APDU command.
+     * @param p1 P1 value of the APDU command.
+     * @param p2 P2 value of the APDU command.
+     * @param p3 P3 value of the APDU command. If p3 is negative a 4 byte APDU
+     *            is sent to the SIM.
+     * @param data Data to be sent with the APDU.
+     * @param response Callback message. response.obj.userObj will be
+     *            an IccIoResult on success.
+     */
+    public void iccTransmitApduLogicalChannel(int channel, int cla, int instruction,
+            int p1, int p2, int p3, String data, Message response);
+
+    /**
+     * Exchange APDUs with the SIM on a basic channel.
+     *
+     * Input parameters equivalent to TS 27.007 AT+CSIM command.
+     *
+     * @param cla Class of the APDU command.
+     * @param instruction Instruction of the APDU command.
+     * @param p1 P1 value of the APDU command.
+     * @param p2 P2 value of the APDU command.
+     * @param p3 P3 value of the APDU command. If p3 is negative a 4 byte APDU
+     *            is sent to the SIM.
+     * @param data Data to be sent with the APDU.
+     * @param response Callback message. response.obj.userObj will be
+     *            an IccIoResult on success.
+     */
+    public void iccTransmitApduBasicChannel(int cla, int instruction, int p1, int p2,
+            int p3, String data, Message response);
 
     /**
      * @return version of the ril.

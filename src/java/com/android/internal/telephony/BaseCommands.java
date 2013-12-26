@@ -18,8 +18,10 @@ package com.android.internal.telephony;
 
 
 import android.content.Context;
+import android.os.Message;
 import android.os.RegistrantList;
 import android.os.Registrant;
+import android.os.Message;
 import android.os.Handler;
 import android.os.AsyncResult;
 import android.telephony.TelephonyManager;
@@ -671,6 +673,10 @@ public abstract class BaseCommands implements CommandsInterface {
     public void setCurrentPreferredNetworkType() {
     }
 
+    @Override
+    public void getDataCallProfile(int appType, Message result) {
+    }
+
     //***** Protected Methods
     /**
      * Store new RadioState and send notification based on the changes
@@ -715,6 +721,9 @@ public abstract class BaseCommands implements CommandsInterface {
                 mOffOrNotAvailRegistrants.notifyRegistrants();
             }
         }
+    }
+
+    public void sendSMSExpectMore (String smscPDU, String pdu, Message result) {
     }
 
     protected void onRadioAvailable() {
