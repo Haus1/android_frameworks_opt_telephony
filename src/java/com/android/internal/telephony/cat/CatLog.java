@@ -27,8 +27,7 @@ public abstract class CatLog {
         }
 
         String className = caller.getClass().getName();
-        Rlog.d("CAT", className.substring(className.lastIndexOf('.') + 1) + ": "
-                + msg);
+        Rlog.d("CAT", className.substring(className.lastIndexOf('.') + 1) + ": " + msg);
     }
 
     public static void d(String caller, String msg) {
@@ -37,5 +36,10 @@ public abstract class CatLog {
         }
 
         Rlog.d("CAT", caller + ": " + msg);
+    }
+
+    public static void e(Object caller, String msg) {
+        String className = caller.getClass().getName();
+        Rlog.e("CAT", className.substring(className.lastIndexOf('.') + 1) + ": " + msg);
     }
 }
