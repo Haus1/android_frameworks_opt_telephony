@@ -2081,6 +2081,7 @@ public final class DcTracker extends DcTrackerBase {
 
         int radioTech = ServiceState.RIL_RADIO_TECHNOLOGY_UNKNOWN;
         int techFamily = UiccController.APP_FAM_UNKNOWN;
+// ******* TODO: Check for cdmaonlte here so the empty check can be remove from buildWaitingApns() *******
         if (mAllApnSettings.isEmpty()) {
             radioTech = mPhone.getServiceState().getRilDataRadioTechnology();
             techFamily = UiccController.getFamilyFromRadioTechnology(radioTech);
